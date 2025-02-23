@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "cvrp-tabu-search"
+version = "0.1.0"
+description = ""
+authors = ["Nilo Garcia Monteiro <nilo.garmon@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+matplotlib = "^3.10.0"
+pandas = "^2.2.3"
+numpy = "^2.2.3"
+vrplib = "^1.5.1"
+typer = "^0.15.1"
+tqdm = "^4.67.1"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.5"
+
+[tool.poetry.scripts]
+tabu = "cvrp_tabu_search.main:_exec_run"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
