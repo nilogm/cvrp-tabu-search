@@ -25,7 +25,6 @@ def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run, 
 
             else:
                 # adiciona bias de frequência
-                # bias = sum([run.common_movements[i] for i, _ in movement if run.common_movements[i] > run.common_movements_avg]) * bias_multiplier
                 bias = sum([run.common_movements[i] for i, _ in movement]) * bias_multiplier
 
                 # confere se é a melhor solução da vizinhança até agora
@@ -74,13 +73,9 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: int, bias_multiplier: floa
             s_, movement = get_best_neighbor([shift_neighborhood], s, p, run, run.bias_multiplier * 100)
         s = s_
 
-        # atualiza as frequências dos movimentos
+        # atualiza as frequências dos movimentos e a lista tabu
         for i in movement:
             run.common_movements[i[0]] += 1
-            run.common_movements_avg += 1 / (p.n - 1)
-
-        # atualiza a lista tabu
-        for i in movement:
             run.tabu_list[i[0]].append(i[1])
             run.tabu_tenures[i[0]].append(run.tabu_tenure_value)
 
