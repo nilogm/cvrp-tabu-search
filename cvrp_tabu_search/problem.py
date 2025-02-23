@@ -30,8 +30,8 @@ class Run:
     def __init__(self, s: Solution, n: int, tabu_tenure_multiplier: float, bias_multiplier: float, seed: int):
         self.common_movements: dict[int, int] = {i: 0 for i in range(n)}
         self.common_movements_avg: float = 0
-        self.tabu_list: list[int] = []
-        self.tabu_tenures: list[int] = []
+        self.tabu_list = {i: [] for i in range(n)}
+        self.tabu_tenures = {i: [] for i in range(n)}
         self.initial_tabu_tenure: int = round(tabu_tenure_multiplier * log10(n))
         self.tabu_tenure_value: int = round(tabu_tenure_multiplier * log10(n))
         self.bias_multiplier: float = bias_multiplier

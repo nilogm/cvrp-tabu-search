@@ -17,7 +17,7 @@ def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run, 
             s_: Solution = s_
 
             # confere se é tabu
-            if len([i for i in movement if i in run.tabu_list]) > 0:
+            if any([i[1] in run.tabu_list[i[0]] for i in movement]):
                 # confere se bate o critério de aspiração
                 if s_.f < run.best_solution.f and (best_solution is None or best_solution.f > s_.f):
                     best_solution = s_
@@ -53,13 +53,14 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: int, bias_multiplier: floa
         t_s = time.time()
 
         # atualiza tabu tenure
-        i = len(run.tabu_list) - 1
-        while i >= 0:
-            run.tabu_tenures[i] -= 1
-            if run.tabu_tenures[i] == 0:
-                run.tabu_list.pop(i)
-                run.tabu_tenures.pop(i)
-            i -= 1
+        for k in run.tabu_list.keys():
+            i = len(run.tabu_list[k]) - 1
+            while i >= 0:
+                run.tabu_tenures[k][i] -= 1
+                if run.tabu_tenures[k][i] == 0:
+                    run.tabu_list[k].pop(i)
+                    run.tabu_tenures[k].pop(i)
+                i -= 1
 
         # escolhe uma estrutura de vizinhança aleatoriamente
         neighbor_method = random.choice(structures)
@@ -80,8 +81,8 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: int, bias_multiplier: floa
 
         # atualiza a lista tabu
         for i in movement:
-            run.tabu_list.append(i)
-            run.tabu_tenures.append(run.tabu_tenure_value)
+            run.tabu_list[i[0]].append(i[1])
+            run.tabu_tenures[i[0]].append(run.tabu_tenure_value)
 
         # atualiza melhor global
         if run.best_solution.f > s.f:
