@@ -19,21 +19,19 @@ def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run, 
             # confere se é tabu
             if len([i for i in movement if i in run.tabu_list]) > 0:
                 # confere se bate o critério de aspiração
-                if s_.f >= run.best_solution.f:
-                    continue
-
-                if best_solution is None or best_solution.f > s_.f:
+                if s_.f < run.best_solution.f and (best_solution is None or best_solution.f > s_.f):
                     best_solution = s_
                     best_solution_movement = movement
 
-            # adiciona bias de frequência
-            # bias = sum([run.common_movements[i] for i, _ in movement if run.common_movements[i] > run.common_movements_avg]) * bias_multiplier
-            bias = sum([run.common_movements[i] for i, _ in movement]) * bias_multiplier
+            else:
+                # adiciona bias de frequência
+                # bias = sum([run.common_movements[i] for i, _ in movement if run.common_movements[i] > run.common_movements_avg]) * bias_multiplier
+                bias = sum([run.common_movements[i] for i, _ in movement]) * bias_multiplier
 
-            # confere se é a melhor solução da vizinhança até agora
-            if best_solution is None or best_solution.f > s_.f + bias:
-                best_solution = s_
-                best_solution_movement = movement
+                # confere se é a melhor solução da vizinhança até agora
+                if best_solution is None or best_solution.f > s_.f + bias:
+                    best_solution = s_
+                    best_solution_movement = movement
 
     return best_solution, best_solution_movement
 
