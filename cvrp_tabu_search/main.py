@@ -155,7 +155,7 @@ def read_folder(results_folder: Annotated[str, typer.Option(help="Directory cont
     folder_path = os.path.join(os.getcwd(), results_folder)
     files = sorted(os.listdir(folder_path))
 
-    cols = ["Instance", "Solution", "Best", "Time", "Tenure", "Bias", "Gap"]
+    cols = ["Instance", "Solution", "Best", "Time", "Tenure", "Bias", "Gap", "Seed"]
     all_df = pd.DataFrame()
 
     for i in files:
@@ -168,13 +168,13 @@ def read_folder(results_folder: Annotated[str, typer.Option(help="Directory cont
         # sol_cost = objective_function(instance.solution["routes"], instance.w)
         sol_cost = instance.solution["cost"]
 
-        _, tenure, _, bias, _, _ = info.split("_")
+        _, tenure, _, bias, _, seed = info.removesuffix(".csv").split("_")
 
         best = df.iloc[-1]["global"]
         min_time = df.iloc[df["local"].idxmin()]["time"]
         gap = (best - sol_cost) / sol_cost
 
-        all_df = pd.concat([all_df, pd.DataFrame([[instance_name, sol_cost, best, min_time, float(tenure), float(bias), gap]], columns=cols)])
+        all_df = pd.concat([all_df, pd.DataFrame([[instance_name, sol_cost, best, min_time, float(tenure), float(bias), gap, seed]], columns=cols)])
 
     return all_df
 
@@ -187,6 +187,7 @@ def analyze(results_folder: Annotated[str, typer.Option(help="Directory containi
         results_folder (Annotated[str, typer.Option, optional): caminho para o diretório. Defaults to "Directory containing results .csvs")].
     """
     all_df = read_folder(results_folder)
+    all_df = all_df.drop(columns=["Seed"])
 
     analysis = all_df.groupby(["Tenure", "Bias"]).agg({"Gap": ["min", "mean", "std"]}).sort_values(["Tenure", "Bias"])
     print(analysis.to_latex())
@@ -199,7 +200,7 @@ def analyze(results_folder: Annotated[str, typer.Option(help="Directory containi
     table["Bias"] = table["Bias"].map("{:.3f}".format)
     print(table.to_latex(index=False))
     print()
-    
+
     print(analysis)
     print()
     print(table)
@@ -215,11 +216,12 @@ def table(results_folder: Annotated[str, typer.Option(help="Directory containing
     all_df = read_folder(results_folder)
     all_df = all_df.drop(columns=["Tenure", "Bias"])
 
-    table = all_df.sort_values(["Instance"]).groupby(["Instance", "Solution"], as_index=False).agg({"Best": ["min", "mean"], "Time": ["min", "mean"], "Gap": ["min", "mean"]})
+    print(all_df[all_df["Instance"] == "B-n45-k5"])
+
+    table = all_df.sort_values(["Instance", "Best", "Time"]).groupby(["Instance", "Solution"], as_index=False).agg({"Best": ["first", "mean"], "Time": ["first", "mean"], "Gap": ["min", "mean"]})
     table["Solution"] = table["Solution"].astype(int)
-    table["Best", "min"] = table["Best", "min"].astype(int)
+    table["Best", "first"] = table["Best", "first"].astype(int)
     table["Best", "mean"] = table["Best", "mean"].map("{:.1f}".format)
-    table["Best", "min"] = table["Best", "min"].astype(int)
     table["Time"] = table["Time"].map(lambda x: round(x, 3))
     table["Time"] = table["Time"].map("{:.3f}".format)
     print(table.to_latex(index=False))
