@@ -5,8 +5,10 @@ from cvrp_tabu_search.problem import Solution, Instance
 
 def clarke_wright(p: Instance) -> Solution:
     demand_points = [i for i in range(p.n) if i != p.depot_idx]
+    # inicia com cada cliente em uma rota
     routes = [[i] for i in demand_points]
 
+    # faz todas as conexoes e ordena de forma não decrescente
     savings = [(p.w[p.depot_idx, i] + p.w[p.depot_idx, j] - p.w[i, j], [i, j]) for i in demand_points for j in demand_points[i + 1 :]]
     savings = sorted(savings, key=lambda x: x[0], reverse=True)
 
@@ -24,14 +26,17 @@ def clarke_wright(p: Instance) -> Solution:
         for l in r2:
             routes[l - 1] = routes.index(r1)
 
+    # para cada aresta, veja se é conectável e junte as rotas
     for k in savings:
         i, j = k[1]
         r1 = get_route(i - 1)
         r2 = get_route(j - 1)
 
+        # se já pertencerem a mesma rota
         if r1 == r2:
             continue
-
+        
+        # se ambos são pontos externos e a rota tem capacidade, conecte-os
         if i == r1[0] and r2[-1] == j and fits(r2, r1):
             merge_routes(r2, r1)
         elif i == r1[-1] and j == r2[0] and fits(r1, r2):
