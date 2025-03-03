@@ -160,7 +160,7 @@ def read_folder(results_folder: Annotated[str, typer.Option(help="Directory cont
     folder_path = os.path.join(os.getcwd(), results_folder)
     files = sorted(os.listdir(folder_path))
 
-    cols = ["Instance", "Solution", "Best", "Time", "Tenure", "Bias", "Invalid", "Gap", "Seed", "Last", "Last Time"]
+    cols = ["Instance", "Solution", "Best", "Time", "Iteration", "Tenure", "Bias", "Invalid", "Gap", "Seed", "Last", "Last Time", "Last Iteration"]
     all_df = pd.DataFrame()
 
     for i in files:
@@ -176,11 +176,12 @@ def read_folder(results_folder: Annotated[str, typer.Option(help="Directory cont
         _, tenure, _, bias, _, invalid, _, seed = info.removesuffix(".csv").split("_")
 
         best = df.iloc[-1]["global"]
-        min_time = df.iloc[df["local"].idxmin()]["time"]
+        min_iteration = df["local"].idxmin()
+        min_time = df.iloc[min_iteration]["time"]
         gap = (best - sol_cost) / sol_cost
 
         all_df = pd.concat(
-            [all_df, pd.DataFrame([[instance_name, sol_cost, best, min_time, float(tenure), float(bias), float(invalid), gap, seed, df.iloc[-1]["local"], df.iloc[-1]["time"]]], columns=cols)]
+            [all_df, pd.DataFrame([[instance_name, sol_cost, best, min_time, min_iteration + 1, float(tenure), float(bias), float(invalid), gap, seed, df.iloc[-1]["local"], df.iloc[-1]["time"], len(df)]], columns=cols)]
         )
 
     return all_df
@@ -243,13 +244,14 @@ def analyze_invalid(results_folder: Annotated[str, typer.Option(help="Directory 
         results_folder (Annotated[str, typer.Option, optional): caminho para o diretório. Defaults to "Directory containing results .csvs")].
     """
     all_df = read_folder(results_folder)
-    all_df = all_df.drop(columns=["Best", "Time", "Tenure", "Bias", "Seed", "Gap"])
+    all_df = all_df.drop(columns=["Best", "Time", "Seed", "Gap"])
 
     all_df["Last Time Min"] = all_df.groupby("Instance")["Last Time"].transform("min")
     all_df["Time Gap Min"] = all_df["Last Time"] - all_df["Last Time Min"]
+    all_df["Last Iteration Min"] = all_df.groupby("Instance")["Last Iteration"].transform("min")
+    all_df["Iteration Gap Min"] = all_df["Last Iteration"] - all_df["Last Iteration Min"]
 
-    table = all_df.sort_values(["Instance", "Invalid"]).groupby(["Invalid"], as_index=False).agg({"Time Gap Min": ["mean", "std"]})
-    table["Invalid"] = table["Invalid"].map("{:.1f}".format)
+    table = all_df.sort_values(["Instance", "Invalid", "Tenure", "Bias"]).groupby(["Tenure", "Bias", "Invalid"]).agg({"Time Gap Min": ["mean", "std"], "Iteration Gap Min": ["mean", "std"]})
     print(table.to_latex(index=False))
     print()
 

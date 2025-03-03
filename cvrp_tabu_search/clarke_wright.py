@@ -37,9 +37,16 @@ def clarke_wright(p: Instance) -> Solution:
             continue
 
         # se ambos são pontos externos e a rota tem capacidade, conecte-os
-        if i == r1[0] and r2[-1] == j and fits(r2, r1):
-            merge_routes(r2, r1)
-        elif i == r1[-1] and j == r2[0] and fits(r1, r2):
-            merge_routes(r1, r2)
-
+        if fits(r1, r2):
+            if i == r1[0] and j == r2[-1]:
+                merge_routes(r2, r1)
+            elif i == r1[-1] and j == r2[0]:
+                merge_routes(r1, r2)
+            elif i == r1[-1] and j == r2[-1]:
+                r2.reverse()
+                merge_routes(r1, r2)
+            elif i == r1[0] and j == r2[0]:
+                r1.reverse()
+                merge_routes(r1, r2)
+            
     return Solution([i for i in routes if isinstance(i, list)], p.d, p.w)

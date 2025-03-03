@@ -12,7 +12,7 @@ class Solution:
         self.f: int = f if f else objective_function(s, w)
 
     def __str__(self):
-        return str(self.f) + "  -  " + str(self.s)
+        return str(self.s)
 
     def __len__(self):
         return ([len(i) > 0 for i in self.s]).count(True)
@@ -50,7 +50,7 @@ class Run:
         self.save_path = f"{file_save_path}/{instance_name}__{self.savefile_suffix}"
 
     def update_savefile(self, s: Solution, is_restart: bool, time: float):
-        self.savefile = pd.concat([self.savefile, pd.DataFrame({"local": [s.f], "global": [self.best_solution.f], "restart": [is_restart], "time": [time]})], ignore_index=True)
+        self.savefile = pd.concat([self.savefile, pd.DataFrame({"local": [s.f], "global": [self.best_solution.f], "restart": [is_restart], "time": [time], "solution": [s.s]})], ignore_index=True)
 
     def save(self):
         self.savefile.to_csv(self.save_path)
