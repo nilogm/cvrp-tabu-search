@@ -1,0 +1,37 @@
+{
+    "run_time": 300,
+    "instances": [
+        "Vrp-Set-A/A/A-n44-k6",
+        "Vrp-Set-A/A/A-n45-k6",
+        "Vrp-Set-A/A/A-n53-k7",
+        "Vrp-Set-A/A/A-n61-k9",
+        "Vrp-Set-A/A/A-n63-k9",
+        "Vrp-Set-A/A/A-n64-k9",
+        "Vrp-Set-A/A/A-n65-k9",
+        "Vrp-Set-B/B/B-n41-k6",
+        "Vrp-Set-B/B/B-n45-k6",
+        "Vrp-Set-B/B/B-n51-k7",
+        "Vrp-Set-B/B/B-n64-k9",
+        "Vrp-Set-F/F/F-n45-k4",
+        "Vrp-Set-F/F/F-n72-k4"
+    ],
+    "tabu_tenure_values": [
+        3,
+        7.5,
+        15
+    ],
+    "common_bias_multiplier_values": [
+        0.001,
+        0.01,
+        0.1
+    ],
+    "invalid_bias_multiplier_values": [
+        0.2,
+        0.5,
+        0.8
+    ],
+    "seeds": [
+        1
+    ],
+    "invalid_run": true
+}

@@ -12,10 +12,13 @@
         7.5,
         15
     ],
-    "bias_multiplier_values": [
+    "common_bias_multiplier_values": [
         0.001,
         0.01,
         0.1
+    ],
+    "invalid_bias_multiplier_values": [
+        0.5
     ],
     "seeds": [
         1

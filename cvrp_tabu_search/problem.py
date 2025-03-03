@@ -14,6 +14,12 @@ class Solution:
     def __str__(self):
         return str(self.f) + "  -  " + str(self.s)
 
+    def __len__(self):
+        return ([len(i) > 0 for i in self.s]).count(True)
+
+    def min(self):
+        return min([len(i) for i in self.s])
+
 
 class Instance:
     def __init__(self):
@@ -23,19 +29,20 @@ class Instance:
         self.c: int
         self.depot_idx: int
         self.n: int
+        self.k: int
         self.solution: dict
 
 
 class Run:
-    def __init__(self, s: Solution, n: int, tabu_tenure_multiplier: float, bias_multiplier: float, seed: int):
+    def __init__(self, s: Solution, n: int, tabu_tenure_multiplier: float, bias_multiplier: float, invalid_multiplier: float, seed: int = None):
         self.common_movements: dict[int, int] = {i: 0 for i in range(n)}
         self.tabu_list = {i: [] for i in range(n)}
         self.tabu_tenures = {i: [] for i in range(n)}
-        self.initial_tabu_tenure: int = round(tabu_tenure_multiplier * log10(n))
         self.tabu_tenure_value: int = round(tabu_tenure_multiplier * log10(n))
         self.bias_multiplier: float = bias_multiplier
+        self.invalid_multiplier: float = invalid_multiplier
         self.best_solution: Solution = s
-        self.savefile_suffix = f"t_{tabu_tenure_multiplier}_m_{bias_multiplier}_s_{seed}.csv"
+        self.savefile_suffix = f"t_{tabu_tenure_multiplier}_m_{bias_multiplier}_i_{invalid_multiplier}_s_{seed}.csv"
         self.savefile = pd.DataFrame()
         self.seed: int = seed
 
@@ -59,6 +66,7 @@ def get_instance(path: str) -> Instance:
     p.c = instance["capacity"]
     p.depot_idx = instance["depot"]
     p.n = instance["dimension"]
+    p.k = int(p.name.split("k")[-1])
 
     p.solution = vrplib.read_solution(f"{path}.sol")
 

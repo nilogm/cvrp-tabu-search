@@ -6,7 +6,7 @@ from cvrp_tabu_search.problem import Instance, Solution, Run
 from cvrp_tabu_search.neighborhoods import shift_neighborhood, intraswap_neighborhood, swap_neighborhood, crossover_neighborhood
 
 
-def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run, bias_multiplier: float):
+def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run, restart_multiplier: float = 1):
     # guarda o melhor das vizinhanças
     best_solution: Solution = None
     best_solution_movement = None
@@ -16,29 +16,33 @@ def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run, 
         for s_, movement in f(s, p):
             s_: Solution = s_
 
+            # calcula o bias para soluções inválidas (k maior que o normal)
+            invalid_k_bias = (run.invalid_multiplier * s_.min()) + 1 if len(s_) > p.k else 1
+
             # confere se é tabu
             if any([i[1] in run.tabu_list[i[0]] for i in movement]):
                 # confere se bate o critério de aspiração
-                if s_.f < run.best_solution.f and (best_solution is None or best_solution.f > s_.f):
+                if s_.f < run.best_solution.f and (best_solution is None or best_solution.f > s_.f * invalid_k_bias):
                     best_solution = s_
                     best_solution_movement = movement
 
             else:
                 # adiciona bias de frequência
-                bias = sum([run.common_movements[i] for i, _ in movement]) * bias_multiplier
+                common_bias = sum([run.common_movements[i] for i, _ in movement]) * run.bias_multiplier * restart_multiplier
 
                 # confere se é a melhor solução da vizinhança até agora
-                if best_solution is None or best_solution.f > s_.f + bias:
+                if best_solution is None or best_solution.f > s_.f * invalid_k_bias + common_bias:
                     best_solution = s_
                     best_solution_movement = movement
 
     return best_solution, best_solution_movement
 
 
-def run_tabu(p: Instance, max_time: int, tabu_tenure: int, bias_multiplier: float, seed: int, results_file: str) -> Run:
+def run_tabu(p: Instance, max_time: int, tabu_tenure: int, bias_multiplier: float, invalid_multiplier: float, seed: int, results_file: str, invalid_run: bool = False) -> Run:
     # solução inicial
     s = clarke_wright(p)
-    run = Run(s, p.n, tabu_tenure, bias_multiplier, seed)
+
+    run = Run(s, p.n, tabu_tenure, bias_multiplier, invalid_multiplier, seed)
     run.begin_savefile(results_file, p.name)
 
     # reune os tipos de estruturas de vizinhança
@@ -65,13 +69,16 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: int, bias_multiplier: floa
         neighbor_method = random.choice(structures)
 
         # encontra nova solução que respeita o tabu ou o critério de aspiração
-        s_, movement = get_best_neighbor([neighbor_method], s, p, run, run.bias_multiplier)
+        s_, movement = get_best_neighbor([neighbor_method], s, p, run)
         restart = s_ is None
 
         # fail safe: shift restart
         if restart:
-            s_, movement = get_best_neighbor([shift_neighborhood], s, p, run, run.bias_multiplier * 100)
+            s_, movement = get_best_neighbor([shift_neighborhood], s, p, run, 100)
         s = s_
+
+        if invalid_run and len(s) == p.k:
+            break
 
         # atualiza as frequências dos movimentos e a lista tabu
         for i in movement:

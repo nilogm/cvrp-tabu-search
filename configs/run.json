@@ -8,8 +8,11 @@
     "tabu_tenure_values": [
         7.5
     ],
-    "bias_multiplier_values": [
+    "common_bias_multiplier_values": [
         0.001
+    ],
+    "invalid_bias_multiplier_values": [
+        0.1
     ],
     "seeds": [
         2,

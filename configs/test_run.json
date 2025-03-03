@@ -1,13 +1,16 @@
 {
     "run_time": 300,
     "instances": [
-        "Vrp-Set-B/B/B-n78-k10"
+        "Vrp-Set-A/A/A-n32-k5"
     ],
     "tabu_tenure_values": [
         3
     ],
-    "bias_multiplier_values": [
+    "common_bias_multiplier_values": [
         0.001
+    ],
+    "invalid_bias_multiplier_values": [
+        0.1
     ],
     "seeds": [
         1
