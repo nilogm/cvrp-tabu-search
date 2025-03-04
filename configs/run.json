@@ -12,7 +12,13 @@
         0.001
     ],
     "invalid_bias_multiplier_values": [
-        0.1
+        0.8
+    ],
+    "invalid_tabu_tenure_values": [
+        15
+    ],
+    "invalid_common_bias_multiplier_values": [
+        0.001
     ],
     "seeds": [
         2,

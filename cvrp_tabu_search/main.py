@@ -24,13 +24,13 @@ def init(config_file: str, results_folder: str):
     with open(config_file) as f:
         d = json.load(f)
 
-    if not ("tabu_tenure_values" in d and "common_bias_multiplier_values" in d and "invalid_bias_multiplier_values" in d and "instances" in d and "run_time" in d and "seeds" in d):
+    if not ("tabu_tenure_values" in d and "common_bias_multiplier_values" in d and "invalid_bias_multiplier_values" in d and 'tabu_tenure_values' in d and 'common_bias_multiplier_values' in d and "instances" in d and "run_time" in d and "seeds" in d):
         raise AttributeError(
-            "Configuration file has missing values. Make sure it contains at least the following keys: 'tabu_tenure_values', 'common_bias_multiplier_values', 'invalid_bias_multiplier_values', 'instances', 'run_time' and 'seeds'"
+            "Configuration file has missing values. Make sure it contains at least the following keys: 'tabu_tenure_values', 'common_bias_multiplier_values', 'invalid_bias_multiplier_values', 'invalid_tabu_tenure_values', 'invalid_common_bias_multiplier_values', 'instances', 'run_time' and 'seeds'"
         )
 
     all_configs = [
-        i for i in product(d["tabu_tenure_values"], d["common_bias_multiplier_values"], d["invalid_bias_multiplier_values"], d["seeds"], [d["invalid_run"] if "invalid_run" in d else False])
+        i for i in product(d["tabu_tenure_values"], d["common_bias_multiplier_values"], d["invalid_bias_multiplier_values"], d['tabu_tenure_values'], d['common_bias_multiplier_values'], d["seeds"], [d["invalid_run"] if "invalid_run" in d else False])
     ]
 
     results_folder_path = os.path.join(os.getcwd(), results_folder)
@@ -66,9 +66,9 @@ def run(instance_path: str, run_time: int, all_configs: list, results_folder: st
         results_folder (str): diretório de destino dos resultados
     """
     instance = get_instance(instance_path)
-    for tabu_tenure, bias_multiplier, invalid_multiplier, seed, invalid_run in all_configs:
-        print(instance_path, f" t={tabu_tenure}; ", f" b={bias_multiplier}; ", f" bi={invalid_multiplier}; ", f" s={seed}; ", f" Invalid run? {invalid_run}")
-        run_tabu(instance, run_time, tabu_tenure, bias_multiplier, invalid_multiplier, seed, results_folder, invalid_run)
+    for tabu_tenure, bias_multiplier, invalid_multiplier, invalid_tabu_tenure, invalid_bias_multiplier, seed, invalid_run in all_configs:
+        print(instance_path, f" t={tabu_tenure}; ", f" b={bias_multiplier}; ", f" bi={invalid_multiplier}; ", f" it={invalid_tabu_tenure} ", f" ib={invalid_bias_multiplier} ", f" s={seed}; ", f" Invalid run? {invalid_run}")
+        run_tabu(instance, run_time, tabu_tenure, bias_multiplier, invalid_multiplier, invalid_tabu_tenure, invalid_bias_multiplier, seed, results_folder, invalid_run)
 
 
 @app_experiment.command(help="Executes the experiments")

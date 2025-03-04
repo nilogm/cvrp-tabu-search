@@ -34,23 +34,25 @@ class Instance:
 
 
 class Run:
-    def __init__(self, s: Solution, n: int, tabu_tenure_multiplier: float, bias_multiplier: float, invalid_multiplier: float, seed: int = None):
+    def __init__(self, s: Solution, n: int, tabu_tenure_multiplier: float, bias_multiplier: float, invalid_multiplier: float, invalid_tabu_tenure: float, invalid_bias_multiplier: float, seed: int = None):
         self.common_movements: dict[int, int] = {i: 0 for i in range(n)}
         self.tabu_list = {i: [] for i in range(n)}
         self.tabu_tenures = {i: [] for i in range(n)}
         self.tabu_tenure_value: int = round(tabu_tenure_multiplier * log10(n))
+        self.invalid_tabu_tenure_value: int = round(invalid_tabu_tenure * log10(n))
         self.bias_multiplier: float = bias_multiplier
+        self.invalid_bias_multiplier: float = invalid_bias_multiplier
         self.invalid_multiplier: float = invalid_multiplier
         self.best_solution: Solution = s
-        self.savefile_suffix = f"t_{tabu_tenure_multiplier}_m_{bias_multiplier}_i_{invalid_multiplier}_s_{seed}.csv"
+        self.savefile_suffix = f"t_{tabu_tenure_multiplier}_m_{bias_multiplier}_i_{invalid_multiplier}_it_{invalid_tabu_tenure}_ib_{invalid_bias_multiplier}_s_{seed}.csv"
         self.savefile = pd.DataFrame()
         self.seed: int = seed
 
     def begin_savefile(self, file_save_path: str, instance_name: str):
         self.save_path = f"{file_save_path}/{instance_name}__{self.savefile_suffix}"
 
-    def update_savefile(self, s: Solution, is_restart: bool, time: float):
-        self.savefile = pd.concat([self.savefile, pd.DataFrame({"local": [s.f], "global": [self.best_solution.f], "restart": [is_restart], "time": [time], "solution": [s.s]})], ignore_index=True)
+    def update_savefile(self, s: Solution, time: float):
+        self.savefile = pd.concat([self.savefile, pd.DataFrame({"local": [s.f], "global": [self.best_solution.f], "time": [time], "solution": [s.s]})], ignore_index=True)
 
     def save(self):
         self.savefile.to_csv(self.save_path)

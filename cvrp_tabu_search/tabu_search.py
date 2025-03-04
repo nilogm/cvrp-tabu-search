@@ -6,7 +6,7 @@ from cvrp_tabu_search.problem import Instance, Solution, Run
 from cvrp_tabu_search.neighborhoods import shift_neighborhood, intraswap_neighborhood, swap_neighborhood, crossover_neighborhood
 
 
-def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run, restart_multiplier: float = 1):
+def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run):
     # guarda o melhor das vizinhanças
     best_solution: Solution = None
     best_solution_movement = None
@@ -15,9 +15,10 @@ def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run, 
     for f in structure_list:
         for s_, movement in f(s, p):
             s_: Solution = s_
+            invalid_solution = len(s_) > p.k
 
             # calcula o bias para soluções inválidas (k maior que o normal)
-            invalid_k_bias = (run.invalid_multiplier * s_.min()) + 1 if len(s_) > p.k else 1
+            invalid_k_bias = (run.invalid_multiplier * s_.min()) + 1 if invalid_solution else 1
 
             # confere se é tabu
             if any([i[1] in run.tabu_list[i[0]] for i in movement]):
@@ -28,7 +29,8 @@ def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run, 
 
             else:
                 # adiciona bias de frequência
-                common_bias = sum([run.common_movements[i] for i, _ in movement]) * run.bias_multiplier * restart_multiplier
+                common_bias = sum([run.common_movements[i] for i, _ in movement])
+                common_bias *= run.invalid_bias_multiplier if invalid_solution else run.bias_multiplier
 
                 # confere se é a melhor solução da vizinhança até agora
                 if best_solution is None or best_solution.f > s_.f * invalid_k_bias + common_bias:
@@ -38,15 +40,13 @@ def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run, 
     return best_solution, best_solution_movement
 
 
-def run_tabu(p: Instance, max_time: int, tabu_tenure: int, bias_multiplier: float, invalid_multiplier: float, seed: int, results_file: str, invalid_run: bool = False) -> Run:
+def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: float, invalid_multiplier: float, invalid_tabu_tenure: float, invalid_bias_multiplier: float, seed: int, results_file: str, invalid_run: bool = False) -> Run:
     # solução inicial
     s = clarke_wright(p)
 
-    run = Run(s, p.n, tabu_tenure, bias_multiplier, invalid_multiplier, seed)
+    run = Run(s, p.n, tabu_tenure, bias_multiplier, invalid_multiplier, invalid_tabu_tenure, invalid_bias_multiplier, seed)
     run.begin_savefile(results_file, p.name)
 
-    # reune os tipos de estruturas de vizinhança
-    structures = [shift_neighborhood, intraswap_neighborhood, swap_neighborhood, crossover_neighborhood]
     random.seed(seed)
 
     t = 0
@@ -65,26 +65,29 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: int, bias_multiplier: floa
                     run.tabu_tenures[k].pop(i)
                 i -= 1
 
-        # escolhe uma estrutura de vizinhança aleatoriamente
-        neighbor_method = random.choice(structures)
+        # reune os tipos de estruturas de vizinhança
+        structures = [shift_neighborhood, intraswap_neighborhood, swap_neighborhood, crossover_neighborhood]
 
-        # encontra nova solução que respeita o tabu ou o critério de aspiração
-        s_, movement = get_best_neighbor([neighbor_method], s, p, run)
-        restart = s_ is None
-
-        # fail safe: shift restart
-        if restart:
-            s_, movement = get_best_neighbor([shift_neighborhood], s, p, run, 100)
+        s_ = None
+        while s_ is None:
+            # escolhe uma estrutura de vizinhança aleatoriamente
+            neighbor_method = random.choice(structures)
+            # remove a estrutura para evitar de procurar nela novamente
+            structures.remove(neighbor_method)
+            # encontra nova solução que respeita o tabu ou o critério de aspiração
+            s_, movement = get_best_neighbor([neighbor_method], s, p, run)
         s = s_
+        
+        invalid_solution = len(s) == p.k
 
-        if invalid_run and len(s) == p.k:
+        if invalid_run and invalid_solution:
             break
 
         # atualiza as frequências dos movimentos e a lista tabu
         for i in movement:
             run.common_movements[i[0]] += 1
             run.tabu_list[i[0]].append(i[1])
-            run.tabu_tenures[i[0]].append(run.tabu_tenure_value)
+            run.tabu_tenures[i[0]].append(run.invalid_tabu_tenure_value if invalid_solution else run.tabu_tenure_value)
 
         # atualiza melhor global
         if run.best_solution.f > s.f:
@@ -96,7 +99,7 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: int, bias_multiplier: floa
         pbar.set_description("Iteration %d" % it)
         pbar.update(diff if diff + pbar.n < max_time else max_time - pbar.n)
 
-        run.update_savefile(s_, restart, t)
+        run.update_savefile(s_, t)
         it += 1
 
     run.save()

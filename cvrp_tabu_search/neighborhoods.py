@@ -29,6 +29,9 @@ def update_objective_function_intraswap(w: np.ndarray, old_obj: np.int64, i: int
 def intraswap_neighborhood(s: Solution, p: Instance):
     # para cada item da rota...
     for i in range(len(s.s)):
+        if len(s.s[i]) == 0:
+            continue
+            
         for l, v in enumerate(s.s[i]):
             for m, u in enumerate(s.s[i][l + 1 :], l + 1):
                 # cria uma cópia da solução
@@ -66,7 +69,13 @@ def update_objective_function_crossover(w: np.ndarray, old_obj: np.int64, i: int
 def crossover_neighborhood(s: Solution, p: Instance):
     # para cada combinação r0 x r1, em que r0 != r1
     for i in range(len(s.s)):
+        if len(s.s[i]) == 0:
+            continue
+        
         for j in range(len(s.s)):
+            if len(s.s[j]) == 0:
+                continue
+            
             if i == j:
                 continue
 
@@ -130,7 +139,13 @@ def update_objective_function_swap(w: np.ndarray, old_obj: np.int64, i: int, j: 
 def swap_neighborhood(s: Solution, p: Instance):
     # para cada combinação r0 x r1, em que idx(r0) < idx(r1)
     for i in range(len(s.s)):
+        if len(s.s[i]) == 0:
+                continue
+            
         for j in range(i + 1, len(s.s)):
+            if len(s.s[j]) == 0:
+                continue
+            
             # para cada item da rota pivô, ver se pode ser inserida em todas as posições de todas as outras rotas
             for l, v in enumerate(s.s[i]):
                 v_demand = p.d[v]
@@ -181,7 +196,13 @@ def update_objective_function_shift(w: np.ndarray, old_obj: np.int64, i: int, j:
 def shift_neighborhood(s: Solution, p: Instance):
     # para cada combinação r0 x r1, em que r0 != r1
     for i in range(len(s.s)):
+        if len(s.s[i]) == 0:
+            continue
+        
         for j in range(len(s.s)):
+            if len(s.s[j]) == 0:
+                continue
+            
             if i == j:
                 continue
 
