@@ -78,8 +78,7 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: fl
             s_, movement = get_best_neighbor([neighbor_method], s, p, run)
         s = s_
         
-        invalid_solution = len(s) == p.k
-
+        invalid_solution = len(s) > p.k
         if invalid_run and invalid_solution:
             break
 

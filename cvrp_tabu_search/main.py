@@ -30,7 +30,7 @@ def init(config_file: str, results_folder: str):
         )
 
     all_configs = [
-        i for i in product(d["tabu_tenure_values"], d["common_bias_multiplier_values"], d["invalid_bias_multiplier_values"], d['tabu_tenure_values'], d['common_bias_multiplier_values'], d["seeds"], [d["invalid_run"] if "invalid_run" in d else False])
+        i for i in product(d["tabu_tenure_values"], d["common_bias_multiplier_values"], d["invalid_bias_multiplier_values"], d['invalid_tabu_tenure_values'], d['invalid_common_bias_multiplier_values'], d["seeds"], [d["invalid_run"] if "invalid_run" in d else False])
     ]
 
     results_folder_path = os.path.join(os.getcwd(), results_folder)
