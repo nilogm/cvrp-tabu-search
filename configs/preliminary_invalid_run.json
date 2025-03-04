@@ -15,14 +15,10 @@
         "Vrp-Set-F/F/F-n72-k4"
     ],
     "tabu_tenure_values": [
-        3,
-        7.5,
-        15
+        0
     ],
     "common_bias_multiplier_values": [
-        0.001,
-        0.01,
-        0.1
+        0
     ],
     "invalid_bias_multiplier_values": [
         0.2,
@@ -30,13 +26,17 @@
         0.8
     ],
     "invalid_tabu_tenure_values": [
+        3,
+        7.5,
         15
     ],
     "invalid_common_bias_multiplier_values": [
-        0.001
+        0.001,
+        0.01,
+        0.1
     ],
     "seeds": [
         1
     ],
-    "invalid_run": false
+    "invalid_run": true
 }

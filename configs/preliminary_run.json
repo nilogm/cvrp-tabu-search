@@ -18,7 +18,7 @@
         0.1
     ],
     "invalid_bias_multiplier_values": [
-        0.5
+        0.8
     ],
     "invalid_tabu_tenure_values": [
         15
