@@ -39,11 +39,11 @@ def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run):
     return best_solution, best_solution_movement
 
 
-def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: float, invalid_multiplier: float, invalid_tabu_tenure: float, invalid_bias_multiplier: float, seed: int, results_file: str, invalid_run: bool = False) -> Run:
+def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: float, invalid_multiplier: float, seed: int, results_file: str, invalid_run: bool = False) -> Run:
     # solução inicial
     s = clarke_wright(p)
 
-    run = Run(s, p.n, tabu_tenure, bias_multiplier, invalid_multiplier, invalid_tabu_tenure, invalid_bias_multiplier, seed)
+    run = Run(s, p.n, tabu_tenure, bias_multiplier, invalid_multiplier, seed)
     run.begin_savefile(results_file, p.name)
 
     random.seed(seed)
