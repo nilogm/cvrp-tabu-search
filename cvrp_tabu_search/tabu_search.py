@@ -75,6 +75,10 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: fl
             structures.remove(neighbor_method)
             # encontra nova solução que respeita o tabu ou o critério de aspiração
             s_, movement = get_best_neighbor([neighbor_method], s, p, run)
+            # tenta encontrar por meio de shift
+            if s_ is None and neighbor_method is not shift_neighborhood:
+                s_, movement = get_best_neighbor([shift_neighborhood], s, p, run)
+                structures.remove(shift_neighborhood)
         s = s_
         
         invalid_solution = len(s) > p.k

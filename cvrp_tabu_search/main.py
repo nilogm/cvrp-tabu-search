@@ -168,6 +168,7 @@ def read_folder(results_folder: Annotated[str, typer.Option(help="Directory cont
         df = pd.read_csv(df_path)
 
         sol_cost = objective_function(instance.solution["routes"], instance.w)
+        sol_cost = instance.solution["cost"]
 
         _, tenure, _, bias, _, invalid, _, seed = info.removesuffix(".csv").split("_")
 
@@ -200,7 +201,7 @@ def analyze(results_folder: Annotated[str, typer.Option(help="Directory containi
     print(analysis)
     print()
 
-    all_df = all_df.drop(columns=["Solution", "Time", "Iteration", "Invalid", "Last Iteration", "Gap"])
+    all_df = all_df.drop(columns=["Solution", "Time", "Iteration", "Invalid", "Gap"])
     all_df = all_df[["Instance", "Tenure", "Bias", "Best"]]
     table = all_df.sort_values(["Instance", "Tenure", "Bias"])
     table["Tenure"] = table["Tenure"].map("{:.1f}".format)
@@ -228,6 +229,8 @@ def table(results_folder: Annotated[str, typer.Option(help="Directory containing
     table["Time"] = table["Time"].map(lambda x: round(x, 3))
     table["Time"] = table["Time"].map("{:.3f}".format)
     print(table.to_latex(index=False))
+    
+    print(len(table[table["Gap", "min"] == 0]), len(table[table["Gap", "mean"] == 0]))
 
     print()
     print(table)
