@@ -24,13 +24,13 @@ def init(config_file: str, results_folder: str):
     with open(config_file) as f:
         d = json.load(f)
 
-    if not ("tabu_tenure_values" in d and "common_bias_multiplier_values" in d and "invalid_bias_multiplier_values" in d and 'tabu_tenure_values' in d and 'common_bias_multiplier_values' in d and "instances" in d and "run_time" in d and "seeds" in d):
-        raise AttributeError(
-            "Configuration file has missing values. Make sure it contains at least the following keys: 'tabu_tenure_values', 'common_bias_multiplier_values', 'invalid_bias_multiplier_values', 'invalid_tabu_tenure_values', 'invalid_common_bias_multiplier_values', 'instances', 'run_time' and 'seeds'"
-        )
+    keys = ["tabu_tenure_values", "common_bias_multiplier_values", "invalid_bias_multiplier_values", "instances", "run_time", "seeds"]
+
+    if any([i not in d for i in keys]):
+        raise AttributeError(f"Configuration file has missing values. Make sure it contains the following keys: {keys}")
 
     all_configs = [
-        i for i in product(d["tabu_tenure_values"], d["common_bias_multiplier_values"], d["invalid_bias_multiplier_values"], d['invalid_tabu_tenure_values'], d['invalid_common_bias_multiplier_values'], d["seeds"], [d["invalid_run"] if "invalid_run" in d else False])
+        i for i in product(d["tabu_tenure_values"], d["common_bias_multiplier_values"], d["invalid_bias_multiplier_values"], d["seeds"], [d["invalid_run"] if "invalid_run" in d else False])
     ]
 
     results_folder_path = os.path.join(os.getcwd(), results_folder)
@@ -66,9 +66,9 @@ def run(instance_path: str, run_time: int, all_configs: list, results_folder: st
         results_folder (str): diretório de destino dos resultados
     """
     instance = get_instance(instance_path)
-    for tabu_tenure, bias_multiplier, invalid_multiplier, invalid_tabu_tenure, invalid_bias_multiplier, seed, invalid_run in all_configs:
-        print(instance_path, f" t={tabu_tenure}; ", f" b={bias_multiplier}; ", f" bi={invalid_multiplier}; ", f" it={invalid_tabu_tenure} ", f" ib={invalid_bias_multiplier} ", f" s={seed}; ", f" Invalid run? {invalid_run}")
-        run_tabu(instance, run_time, tabu_tenure, bias_multiplier, invalid_multiplier, invalid_tabu_tenure, invalid_bias_multiplier, seed, results_folder, invalid_run)
+    for tabu_tenure, bias_multiplier, invalid_multiplier, seed, invalid_run in all_configs:
+        print(instance_path, f" t={tabu_tenure}; ", f" b={bias_multiplier}; ", f" bi={invalid_multiplier}; ", f" s={seed}; ", f" Invalid run? {invalid_run}")
+        run_tabu(instance, run_time, tabu_tenure, bias_multiplier, invalid_multiplier, seed, results_folder, invalid_run)
 
 
 @app_experiment.command(help="Executes the experiments")
@@ -141,9 +141,6 @@ def plot(result_file: Annotated[str, typer.Option(help="The target run's .csv")]
     sol_cost = objective_function(instance.solution["routes"], instance.w)
     ax.axhline(sol_cost, c="r", lw=1)
 
-    for i in df.index[df["restart"] == True]:
-        ax.axvline(i, c="r", lw=1)
-
     min_idx = df["global"].idxmin()
     ax.scatter([min_idx], [df.iloc[min_idx]["global"]], c="k", s=10, lw=1)
 
@@ -151,7 +148,7 @@ def plot(result_file: Annotated[str, typer.Option(help="The target run's .csv")]
     ax.set_ylim(sol_cost - 10, df["local"].max() + 10)
     ax.set_xlim(-10, df.index[-1] + 10)
 
-    fig.savefig("graph.svg")
+    fig.savefig("graph.png")
 
     plt.show()
 
@@ -160,7 +157,7 @@ def read_folder(results_folder: Annotated[str, typer.Option(help="Directory cont
     folder_path = os.path.join(os.getcwd(), results_folder)
     files = sorted(os.listdir(folder_path))
 
-    cols = ["Instance", "Solution", "Best", "Time", "Iteration", "Tenure", "Bias", "Invalid", "Gap", "Seed", "Last", "Last Time", "Last Iteration"]
+    cols = ["Instance", "Solution", "Best", "Time", "Iteration", "Tenure", "Bias", "Invalid", "Gap", "Seed"]
     all_df = pd.DataFrame()
 
     for i in files:
@@ -170,8 +167,7 @@ def read_folder(results_folder: Annotated[str, typer.Option(help="Directory cont
         df_path = os.path.join(folder_path, i)
         df = pd.read_csv(df_path)
 
-        # sol_cost = objective_function(instance.solution["routes"], instance.w)
-        sol_cost = instance.solution["cost"]
+        sol_cost = objective_function(instance.solution["routes"], instance.w)
 
         _, tenure, _, bias, _, invalid, _, seed = info.removesuffix(".csv").split("_")
 
@@ -180,9 +176,7 @@ def read_folder(results_folder: Annotated[str, typer.Option(help="Directory cont
         min_time = df.iloc[min_iteration]["time"]
         gap = (best - sol_cost) / sol_cost
 
-        all_df = pd.concat(
-            [all_df, pd.DataFrame([[instance_name, sol_cost, best, min_time, min_iteration + 1, float(tenure), float(bias), float(invalid), gap, seed, df.iloc[-1]["local"], df.iloc[-1]["time"], len(df)]], columns=cols)]
-        )
+        all_df = pd.concat([all_df, pd.DataFrame([[instance_name, sol_cost, best, min_time, min_iteration + 1, float(tenure), float(bias), float(invalid), gap, seed]], columns=cols)])
 
     return all_df
 
@@ -195,21 +189,24 @@ def analyze(results_folder: Annotated[str, typer.Option(help="Directory containi
         results_folder (Annotated[str, typer.Option, optional): caminho para o diretório. Defaults to "Directory containing results .csvs")].
     """
     all_df = read_folder(results_folder)
-    all_df = all_df.drop(columns=["Seed", "Last", "Last Time"])
+    all_df = all_df.drop(columns=["Seed"])
 
-    analysis = all_df.groupby(["Tenure", "Bias"]).agg({"Gap": ["min", "mean", "std"]}).sort_values(["Tenure", "Bias"])
+    analysis = all_df.sort_values(["Tenure", "Bias"])
+    analysis["Tenure"] = analysis["Tenure"].map("{:.1f}".format)
+    analysis["Bias"] = analysis["Bias"].map("{:.3f}".format)
+    analysis = analysis.groupby(["Tenure", "Bias"], sort=False).agg({"Gap": ["min", "mean", "std"]})
     print(analysis.to_latex())
     print()
-    table = all_df.sort_values(["Instance", "Tenure", "Bias"])
-    table["Solution"] = table["Solution"].astype(int)
-    table["Best"] = table["Best"].astype(int)
-    table["Time"] = table["Time"].map("{:.2f}".format)
-    table["Tenure"] = table["Tenure"].map("{:.1f}".format)
-    table["Bias"] = table["Bias"].map("{:.3f}".format)
-    print(table.to_latex(index=False))
+    print(analysis)
     print()
 
-    print(analysis)
+    all_df = all_df.drop(columns=["Solution", "Time", "Iteration", "Invalid", "Last Iteration", "Gap"])
+    all_df = all_df[["Instance", "Tenure", "Bias", "Best"]]
+    table = all_df.sort_values(["Instance", "Tenure", "Bias"])
+    table["Tenure"] = table["Tenure"].map("{:.1f}".format)
+    table["Bias"] = table["Bias"].map("{:.3f}".format)
+    table["Best"] = table["Best"].astype(int)
+    print(table.to_latex(index=False))
     print()
     print(table)
 
@@ -222,7 +219,7 @@ def table(results_folder: Annotated[str, typer.Option(help="Directory containing
         results_folder (Annotated[str, typer.Option, optional): caminho para o diretório. Defaults to "Directory containing results .csvs")].
     """
     all_df = read_folder(results_folder)
-    all_df = all_df.drop(columns=["Tenure", "Bias", "Last", "Last Time"])
+    all_df = all_df.drop(columns=["Tenure", "Bias"])
 
     table = all_df.sort_values(["Instance", "Best", "Time"]).groupby(["Instance", "Solution"], as_index=False).agg({"Best": ["first", "mean"], "Time": ["first", "mean"], "Gap": ["min", "mean"]})
     table["Solution"] = table["Solution"].astype(int)
@@ -231,29 +228,6 @@ def table(results_folder: Annotated[str, typer.Option(help="Directory containing
     table["Time"] = table["Time"].map(lambda x: round(x, 3))
     table["Time"] = table["Time"].map("{:.3f}".format)
     print(table.to_latex(index=False))
-
-    print()
-    print(table)
-
-
-@app_experiment.command(help="Shows the invalid bias parameter tuning table (for invalid starts)")
-def analyze_invalid(results_folder: Annotated[str, typer.Option(help="Directory containing results .csvs")]):
-    """Printa a tabela dos resultados dos experimentos com o parâmetro _invalid_bias_ para análise.
-
-    Args:
-        results_folder (Annotated[str, typer.Option, optional): caminho para o diretório. Defaults to "Directory containing results .csvs")].
-    """
-    all_df = read_folder(results_folder)
-    all_df = all_df.drop(columns=["Best", "Time", "Seed", "Gap"])
-
-    all_df["Last Time Min"] = all_df.groupby("Instance")["Last Time"].transform("min")
-    all_df["Time Gap Min"] = all_df["Last Time"] - all_df["Last Time Min"]
-    all_df["Last Iteration Min"] = all_df.groupby("Instance")["Last Iteration"].transform("min")
-    all_df["Iteration Gap Min"] = all_df["Last Iteration"] - all_df["Last Iteration Min"]
-
-    table = all_df.sort_values(["Instance", "Invalid", "Tenure", "Bias"]).groupby(["Tenure", "Bias", "Invalid"]).agg({"Time Gap Min": ["mean", "std"], "Iteration Gap Min": ["mean", "std"]})
-    print(table.to_latex(index=False))
-    print()
 
     print()
     print(table)
