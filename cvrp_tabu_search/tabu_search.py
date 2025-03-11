@@ -69,6 +69,8 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: fl
         # reune os tipos de estruturas de vizinhança
         structures = [shift_neighborhood, intraswap_neighborhood, swap_neighborhood, crossover_neighborhood]
 
+        old_bias = run.bias_multiplier
+        
         s_ = None
         while s_ is None:
             # escolhe uma estrutura de vizinhança aleatoriamente
@@ -79,11 +81,11 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: fl
             s_, movement = get_best_neighbor([neighbor_method], s, p, run)
             # tenta encontrar por meio de shift
             if s_ is None and neighbor_method is not shift_neighborhood and shift_neighborhood in structures:
-                old_bias = run.bias_multiplier
                 run.bias_multiplier *= 100
                 s_, movement = get_best_neighbor([shift_neighborhood], s, p, run)
-                run.bias_multiplier = old_bias
                 structures.remove(shift_neighborhood)
+        
+        run.bias_multiplier = old_bias
         s = s_
         
         invalid_solution = len(s) > p.k
