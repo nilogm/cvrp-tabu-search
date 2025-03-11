@@ -16,9 +16,6 @@ tqdm = "^4.67.1"
 jinja2 = "^3.1.5"
 ipdb = "^0.13.13"
 
-[tool.poetry.group.dev.dependencies]
-ipykernel = "^6.29.5"
-
 [tool.poetry.scripts]
 tabu = "cvrp_tabu_search.main:_exec_run"
 

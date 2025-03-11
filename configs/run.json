@@ -1,12 +1,11 @@
 {
     "run_time": 300,
     "instances": [
-        "Vrp-Set-A/A/",
         "Vrp-Set-B/B/",
         "Vrp-Set-F/F/"
     ],
     "tabu_tenure_values": [
-        7.5
+        3
     ],
     "common_bias_multiplier_values": [
         0.001

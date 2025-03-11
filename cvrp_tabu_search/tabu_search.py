@@ -47,6 +47,8 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: fl
     run.begin_savefile(results_file, p.name)
 
     random.seed(seed)
+    
+    invalid_start = len(s) > k
 
     t = 0
     it = 1
@@ -76,8 +78,11 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: fl
             # encontra nova solução que respeita o tabu ou o critério de aspiração
             s_, movement = get_best_neighbor([neighbor_method], s, p, run)
             # tenta encontrar por meio de shift
-            if s_ is None and neighbor_method is not shift_neighborhood:
+            if s_ is None and neighbor_method is not shift_neighborhood and shift_neighborhood in structures:
+                old_bias = run.bias_multiplier
+                run.bias_multiplier *= 100
                 s_, movement = get_best_neighbor([shift_neighborhood], s, p, run)
+                run.bias_multiplier = old_bias
                 structures.remove(shift_neighborhood)
         s = s_
         
@@ -88,6 +93,9 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: fl
             run.common_movements[i[0]] += 1
             run.tabu_list[i[0]].append(i[1])
             run.tabu_tenures[i[0]].append(run.tabu_tenure_value)
+            
+        if invalid_start and not invalid_solution:
+            run.best_solution = s
 
         # atualiza melhor global
         if run.best_solution.f > s.f:
