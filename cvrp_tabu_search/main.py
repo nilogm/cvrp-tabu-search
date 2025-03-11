@@ -5,7 +5,7 @@ import traceback
 import random
 from itertools import product
 from typing_extensions import Annotated
-from cvrp_tabu_search.problem import get_instance, Run
+from cvrp_tabu_search.problem import get_instance, Run, Parameters
 from cvrp_tabu_search.tabu_search import run_tabu
 from cvrp_tabu_search.clarke_wright import clarke_wright
 from cvrp_tabu_search.utils import objective_function
@@ -26,12 +26,24 @@ def init(config_file: str, results_folder: str):
     with open(config_file) as f:
         d = json.load(f)
 
-    keys = ["tabu_tenure_values", "common_bias_multiplier_values", "invalid_bias_multiplier_values", "instances", "run_time", "seeds"]
+    keys = ["instances", "run_time", "valid", "invalid", "invalid_multiplier", "seeds"]
 
     if any([i not in d for i in keys]):
         raise AttributeError(f"Configuration file has missing values. Make sure it contains the following keys: {keys}")
 
-    all_configs = [i for i in product(d["tabu_tenure_values"], d["common_bias_multiplier_values"], d["invalid_bias_multiplier_values"], d["seeds"])]
+    all_configs = [
+        i
+        for i in product(
+            d["valid"]["tabu_tenure"],
+            d["valid"]["frequency_multiplier"],
+            d["valid"]["overcapacity_multiplier"],
+            d["invalid_multiplier"],
+            d["invalid"]["tabu_tenure"],
+            d["invalid"]["frequency_multiplier"],
+            d["invalid"]["overcapacity_multiplier"],
+            d["seeds"],
+        )
+    ]
 
     results_folder_path = os.path.join(os.getcwd(), results_folder)
     os.makedirs(results_folder_path, exist_ok=True)
@@ -66,15 +78,18 @@ def run(instance_path: str, run_time: int, all_configs: list, results_folder: st
         results_folder (str): diretório de destino dos resultados
     """
     instance = get_instance(instance_path)
-    for tabu_tenure, bias_multiplier, invalid_multiplier, seed in all_configs:
-        print(instance_path, f" t={tabu_tenure}; ", f" b={bias_multiplier}; ", f" bi={invalid_multiplier}; ", f" s={seed}; ")
+    for v_t, v_f, v_o, i, i_t, i_f, i_o, seed in all_configs:
+        print(instance_path, f" v_t={v_t}; ", f" v_f={v_f}; ", f" v_o={v_o}; ", f" i={i}; ", f" i_t={i_t}; ", f" i_f={i_f}; ", f" i_o={i_o}; ", f" s={seed}; ")
 
         random.seed(seed)
 
         # solução inicial
         s = clarke_wright(instance)
 
-        run = Run(s, instance.n, tabu_tenure, bias_multiplier, invalid_multiplier, seed)
+        valid_params = Parameters(instance.n, v_t, v_f, v_o)
+        invalid_params = Parameters(instance.n, i_t, i_f, i_o)
+
+        run = Run(s, instance.n, valid_params, invalid_params, i, seed)
         run.begin_savefile(results_folder, instance.name)
 
         run_tabu(instance, run_time, run, s)

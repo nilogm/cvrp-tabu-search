@@ -5,13 +5,29 @@
         "Vrp-Set-B/B/",
         "Vrp-Set-F/F/"
     ],
-    "tabu_tenure_values": [
-        3
-    ],
-    "common_bias_multiplier_values": [
-        0.001
-    ],
-    "invalid_bias_multiplier_values": [
+    "valid": {
+        "tabu_tenure": [
+            3
+        ],
+        "frequency_multiplier": [
+            0.001
+        ],
+        "overcapacity_multiplier": [
+            0.5
+        ]
+    },
+    "invalid": {
+        "tabu_tenure": [
+            3
+        ],
+        "frequency_multiplier": [
+            0.001
+        ],
+        "overcapacity_multiplier": [
+            0.5
+        ]
+    },
+    "invalid_multiplier": [
         0.5
     ],
     "seeds": [

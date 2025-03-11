@@ -36,23 +36,28 @@ class Instance:
         self.solution: dict
 
 
+class Parameters:
+    def __init__(self, n: int, tabu_tenure_multiplier: float, frequency_multiplier: float, overcapacity_multiplier: float):
+        self.tabu_tenure = tabu_tenure_multiplier
+        self.t: int = round(tabu_tenure_multiplier * log10(n))
+        self.f: float = frequency_multiplier
+        self.o: float = overcapacity_multiplier
+
+
 class Run:
-    def __init__(self, s: Solution, n: int, tabu_tenure_multiplier: float, bias_multiplier: float, invalid_multiplier: float, seed: int = None):
+    def __init__(self, s: Solution, n: int, valid_parameters: Parameters, invalid_parameters: Parameters, invalid_multiplier: float, seed: int = None):
         self.common_movements: dict[int, int] = {i: 0 for i in range(n)}
         self.tabu_list = {i: [] for i in range(n)}
         self.tabu_tenures = {i: [] for i in range(n)}
 
-        self.tabu_tenure_value: int = round(15 * log10(n))
-        self.tabu_tenure_value_: int = round(tabu_tenure_multiplier * log10(n))
-
-        self.bias_multiplier: float = 0.1
-        self.bias_multiplier_: float = bias_multiplier
-
-        self.invalid_multiplier: float = 0.8
-        self.invalid_multiplier_: float = invalid_multiplier
+        self.params = invalid_parameters
+        self.valid_parameters = valid_parameters
+        self.invalid_parameters = invalid_parameters
+        self.invalid_multiplier: float = invalid_multiplier
+        self.invalid_mode = True
 
         self.best_solution: Solution = s
-        self.savefile_suffix = f"t_{tabu_tenure_multiplier}_m_{bias_multiplier}_i_{invalid_multiplier}_s_{seed}.csv"
+        self.savefile_suffix = f"t_{valid_parameters.tabu_tenure}_f_{valid_parameters.f}_o_{valid_parameters.o}_i_{invalid_multiplier}_t_{invalid_parameters.tabu_tenure}_f_{invalid_parameters.f}_o_{invalid_parameters.o}_s_{seed}.csv"
         self.savefile = pd.DataFrame({"local": [s.f], "global": [s.f], "time": [0.0], "solution": [s.s]})
         self.seed: int = seed
 
@@ -66,9 +71,9 @@ class Run:
         self.savefile.to_csv(self.save_path)
 
     def reset_values(self):
-        self.tabu_tenure_value = self.tabu_tenure_value_
-        self.bias_multiplier = self.bias_multiplier_
-        self.invalid_multiplier = self.invalid_multiplier_
+        if self.invalid_mode:
+            self.params = self.valid_parameters
+            self.invalid_mode = False
 
 
 def get_instance(path: str) -> Instance:
