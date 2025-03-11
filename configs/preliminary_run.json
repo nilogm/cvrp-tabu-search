@@ -18,7 +18,7 @@
             0.01,
             0.1
         ],
-        "overcapacity_multiplier": [
+        "invalid_multiplier": [
             0.1,
             0.5,
             0.9
@@ -31,13 +31,10 @@
         "frequency_multiplier": [
             0.001
         ],
-        "overcapacity_multiplier": [
+        "invalid_multiplier": [
             0.5
         ]
     },
-    "invalid_multiplier": [
-        0.5
-    ],
     "seeds": [
         1
     ]

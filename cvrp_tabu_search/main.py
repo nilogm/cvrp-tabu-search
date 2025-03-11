@@ -26,7 +26,7 @@ def init(config_file: str, results_folder: str):
     with open(config_file) as f:
         d = json.load(f)
 
-    keys = ["instances", "run_time", "valid", "invalid", "invalid_multiplier", "seeds"]
+    keys = ["instances", "run_time", "valid", "invalid", "seeds"]
 
     if any([i not in d for i in keys]):
         raise AttributeError(f"Configuration file has missing values. Make sure it contains the following keys: {keys}")
@@ -36,11 +36,10 @@ def init(config_file: str, results_folder: str):
         for i in product(
             d["valid"]["tabu_tenure"],
             d["valid"]["frequency_multiplier"],
-            d["valid"]["overcapacity_multiplier"],
-            d["invalid_multiplier"],
+            d["valid"]["invalid_multiplier"],
             d["invalid"]["tabu_tenure"],
             d["invalid"]["frequency_multiplier"],
-            d["invalid"]["overcapacity_multiplier"],
+            d["invalid"]["invalid_multiplier"],
             d["seeds"],
         )
     ]
@@ -78,18 +77,18 @@ def run(instance_path: str, run_time: int, all_configs: list, results_folder: st
         results_folder (str): diretório de destino dos resultados
     """
     instance = get_instance(instance_path)
-    for v_t, v_f, v_o, i, i_t, i_f, i_o, seed in all_configs:
-        print(instance_path, f" v_t={v_t}; ", f" v_f={v_f}; ", f" v_o={v_o}; ", f" i={i}; ", f" i_t={i_t}; ", f" i_f={i_f}; ", f" i_o={i_o}; ", f" s={seed}; ")
+    for v_t, v_f, v_i, i_t, i_f, i_i, seed in all_configs:
+        print(instance_path, f" v_t={v_t}; ", f" v_f={v_f}; ", f" v_i={v_i}; ", f" i_t={i_t}; ", f" i_f={i_f}; ", f" i_i={i_i}; ", f" s={seed}; ")
 
         random.seed(seed)
 
         # solução inicial
         s = clarke_wright(instance)
 
-        valid_params = Parameters(instance.n, v_t, v_f, v_o)
-        invalid_params = Parameters(instance.n, i_t, i_f, i_o)
+        valid_params = Parameters(instance.n, v_t, v_f, v_i)
+        invalid_params = Parameters(instance.n, i_t, i_f, i_i)
 
-        run = Run(s, instance.n, valid_params, invalid_params, i, seed)
+        run = Run(s, instance.n, valid_params, invalid_params, seed)
         run.begin_savefile(results_folder, instance.name)
 
         run_tabu(instance, run_time, run, s)

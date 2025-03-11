@@ -37,15 +37,15 @@ class Instance:
 
 
 class Parameters:
-    def __init__(self, n: int, tabu_tenure_multiplier: float, frequency_multiplier: float, overcapacity_multiplier: float):
+    def __init__(self, n: int, tabu_tenure_multiplier: float, frequency_multiplier: float, invalid_multiplier: float):
         self.tabu_tenure = tabu_tenure_multiplier
         self.t: int = round(tabu_tenure_multiplier * log10(n))
         self.f: float = frequency_multiplier
-        self.o: float = overcapacity_multiplier
+        self.i: float = invalid_multiplier
 
 
 class Run:
-    def __init__(self, s: Solution, n: int, valid_parameters: Parameters, invalid_parameters: Parameters, invalid_multiplier: float, seed: int = None):
+    def __init__(self, s: Solution, n: int, valid_parameters: Parameters, invalid_parameters: Parameters, seed: int = None):
         self.common_movements: dict[int, int] = {i: 0 for i in range(n)}
         self.tabu_list = {i: [] for i in range(n)}
         self.tabu_tenures = {i: [] for i in range(n)}
@@ -53,19 +53,25 @@ class Run:
         self.params = invalid_parameters
         self.valid_parameters = valid_parameters
         self.invalid_parameters = invalid_parameters
-        self.invalid_multiplier: float = invalid_multiplier
         self.invalid_mode = True
 
+        self.a = 1
+        self.b = 1
+
         self.best_solution: Solution = s
-        self.savefile_suffix = f"t_{valid_parameters.tabu_tenure}_f_{valid_parameters.f}_o_{valid_parameters.o}_i_{invalid_multiplier}_t_{invalid_parameters.tabu_tenure}_f_{invalid_parameters.f}_o_{invalid_parameters.o}_s_{seed}.csv"
+        self.savefile_suffix = (
+            f"t_{valid_parameters.tabu_tenure}_f_{valid_parameters.f}_o_{valid_parameters.i}_t_{invalid_parameters.tabu_tenure}_f_{invalid_parameters.f}_o_{invalid_parameters.i}_s_{seed}.csv"
+        )
         self.savefile = pd.DataFrame({"local": [s.f], "global": [s.f], "time": [0.0], "solution": [s.s]})
         self.seed: int = seed
 
     def begin_savefile(self, file_save_path: str, instance_name: str):
         self.save_path = f"{file_save_path}/{instance_name}__{self.savefile_suffix}"
 
-    def update_savefile(self, s: Solution, time: float):
-        self.savefile = pd.concat([self.savefile, pd.DataFrame({"local": [s.f], "global": [self.best_solution.f], "time": [time], "solution": [s.s]})], ignore_index=True)
+    def update_savefile(self, s: Solution, time: float, over_k: bool, over_c: bool):
+        self.savefile = pd.concat(
+            [self.savefile, pd.DataFrame({"local": [s.f], "global": [self.best_solution.f], "time": [time], "solution": [s.s], "over_k": [over_k], "over_c": [over_c]})], ignore_index=True
+        )
 
     def save(self):
         self.savefile.to_csv(self.save_path)
