@@ -2,10 +2,12 @@ import os
 import json
 import typer
 import traceback
+import random
 from itertools import product
 from typing_extensions import Annotated
-from cvrp_tabu_search.problem import get_instance
+from cvrp_tabu_search.problem import get_instance, Run
 from cvrp_tabu_search.tabu_search import run_tabu
+from cvrp_tabu_search.clarke_wright import clarke_wright
 from cvrp_tabu_search.utils import objective_function
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -29,9 +31,7 @@ def init(config_file: str, results_folder: str):
     if any([i not in d for i in keys]):
         raise AttributeError(f"Configuration file has missing values. Make sure it contains the following keys: {keys}")
 
-    all_configs = [
-        i for i in product(d["tabu_tenure_values"], d["common_bias_multiplier_values"], d["invalid_bias_multiplier_values"], d["seeds"], [d["invalid_run"] if "invalid_run" in d else False])
-    ]
+    all_configs = [i for i in product(d["tabu_tenure_values"], d["common_bias_multiplier_values"], d["invalid_bias_multiplier_values"], d["seeds"])]
 
     results_folder_path = os.path.join(os.getcwd(), results_folder)
     os.makedirs(results_folder_path, exist_ok=True)
@@ -66,9 +66,18 @@ def run(instance_path: str, run_time: int, all_configs: list, results_folder: st
         results_folder (str): diretório de destino dos resultados
     """
     instance = get_instance(instance_path)
-    for tabu_tenure, bias_multiplier, invalid_multiplier, seed, invalid_run in all_configs:
-        print(instance_path, f" t={tabu_tenure}; ", f" b={bias_multiplier}; ", f" bi={invalid_multiplier}; ", f" s={seed}; ", f" Invalid run? {invalid_run}")
-        run_tabu(instance, run_time, tabu_tenure, bias_multiplier, invalid_multiplier, seed, results_folder, invalid_run)
+    for tabu_tenure, bias_multiplier, invalid_multiplier, seed in all_configs:
+        print(instance_path, f" t={tabu_tenure}; ", f" b={bias_multiplier}; ", f" bi={invalid_multiplier}; ", f" s={seed}; ")
+
+        random.seed(seed)
+
+        # solução inicial
+        s = clarke_wright(instance)
+
+        run = Run(s, instance.n, tabu_tenure, bias_multiplier, invalid_multiplier, seed)
+        run.begin_savefile(results_folder, instance.name)
+
+        run_tabu(instance, run_time, run, s)
 
 
 @app_experiment.command(help="Executes the experiments")
@@ -229,7 +238,7 @@ def table(results_folder: Annotated[str, typer.Option(help="Directory containing
     table["Time"] = table["Time"].map(lambda x: round(x, 3))
     table["Time"] = table["Time"].map("{:.3f}".format)
     print(table.to_latex(index=False))
-    
+
     print(len(table[table["Gap", "min"] == 0]), len(table[table["Gap", "mean"] == 0]))
 
     print()

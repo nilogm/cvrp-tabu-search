@@ -31,7 +31,7 @@ def intraswap_neighborhood(s: Solution, p: Instance):
     for i in range(len(s.s)):
         if len(s.s[i]) == 0:
             continue
-            
+
         for l, v in enumerate(s.s[i]):
             for m, u in enumerate(s.s[i][l + 1 :], l + 1):
                 # cria uma cópia da solução
@@ -71,11 +71,11 @@ def crossover_neighborhood(s: Solution, p: Instance):
     for i in range(len(s.s)):
         if len(s.s[i]) == 0:
             continue
-        
+
         for j in range(len(s.s)):
             if len(s.s[j]) == 0:
                 continue
-            
+
             if i == j:
                 continue
 
@@ -92,7 +92,7 @@ def crossover_neighborhood(s: Solution, p: Instance):
                     new_r1_demand = s.d[i] - r1_right_demand + r2_right_demand
                     new_r2_demand = s.d[j] + r1_right_demand - r2_right_demand
 
-                    if new_r1_demand <= p.c and new_r2_demand <= p.c:
+                    if True or (new_r1_demand <= p.c and new_r2_demand <= p.c):
                         # cria uma cópia da solução
                         new_s = deepcopy(s)
 
@@ -140,12 +140,12 @@ def swap_neighborhood(s: Solution, p: Instance):
     # para cada combinação r0 x r1, em que idx(r0) < idx(r1)
     for i in range(len(s.s)):
         if len(s.s[i]) == 0:
-                continue
-            
+            continue
+
         for j in range(i + 1, len(s.s)):
             if len(s.s[j]) == 0:
                 continue
-            
+
             # para cada item da rota pivô, ver se pode ser inserida em todas as posições de todas as outras rotas
             for l, v in enumerate(s.s[i]):
                 v_demand = p.d[v]
@@ -156,7 +156,7 @@ def swap_neighborhood(s: Solution, p: Instance):
                     new_i_demand = s.d[i] - v_demand + u_demand
                     new_j_demand = s.d[j] + v_demand - u_demand
 
-                    if new_j_demand <= p.c and new_i_demand <= p.c:
+                    if True or (new_j_demand <= p.c and new_i_demand <= p.c):
                         # cria uma cópia da solução
                         new_s = deepcopy(s)
 
@@ -198,11 +198,14 @@ def shift_neighborhood(s: Solution, p: Instance):
     for i in range(len(s.s)):
         if len(s.s[i]) == 0:
             continue
-        
+
+        if len(s.s[i]) == 1 and p.k == len(s):
+            continue
+
         for j in range(len(s.s)):
             if len(s.s[j]) == 0:
                 continue
-            
+
             if i == j:
                 continue
 
@@ -213,7 +216,7 @@ def shift_neighborhood(s: Solution, p: Instance):
                 # se o item pode ser inserido na rota j sem estourar a capacidade...
                 new_j_demand = s.d[j] + v_demand
 
-                if new_j_demand <= p.c:
+                if True or new_j_demand <= p.c:
                     # para cada lugar possível de inserir o ponto na rota
                     for k in range(len(s.s[j]) + 1):
                         # cria uma cópia da solução

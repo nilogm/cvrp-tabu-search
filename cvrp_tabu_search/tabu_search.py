@@ -1,15 +1,17 @@
 import time
 import random
+import math
 from tqdm import tqdm
-from cvrp_tabu_search.clarke_wright import clarke_wright
 from cvrp_tabu_search.problem import Instance, Solution, Run
 from cvrp_tabu_search.neighborhoods import shift_neighborhood, intraswap_neighborhood, swap_neighborhood, crossover_neighborhood
+from cvrp_tabu_search.utils import get_route_demand
 
 
-def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run):
+def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run, it: int):
     # guarda o melhor das vizinhanças
     best_solution: Solution = None
     best_solution_movement = None
+    best_f: float = math.inf
 
     # roda todas as estruturas de vizinhança
     for f in structure_list:
@@ -19,12 +21,14 @@ def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run):
 
             # calcula o bias para soluções inválidas (k maior que o normal)
             invalid_k_bias = (run.invalid_multiplier * s_.min()) + 1 if invalid_solution else 1
+            invalid_k_bias += s_.get_overcapacity(p.c) * 0.1
 
             # confere se é tabu
             if any([i[1] in run.tabu_list[i[0]] for i in movement]):
                 # confere se bate o critério de aspiração
-                if s_.f < run.best_solution.f and (best_solution is None or best_solution.f > s_.f * invalid_k_bias):
+                if s_.f < run.best_solution.f and (best_f > s_.f * invalid_k_bias):
                     best_solution = s_
+                    best_f = s_.f * invalid_k_bias
                     best_solution_movement = movement
 
             else:
@@ -32,24 +36,15 @@ def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run):
                 common_bias = sum([run.common_movements[i] for i, _ in movement]) * run.bias_multiplier
 
                 # confere se é a melhor solução da vizinhança até agora
-                if best_solution is None or best_solution.f > s_.f * invalid_k_bias + common_bias:
+                if best_f > s_.f * invalid_k_bias + common_bias:
                     best_solution = s_
+                    best_f = s_.f * invalid_k_bias + common_bias
                     best_solution_movement = movement
 
     return best_solution, best_solution_movement
 
 
-def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: float, invalid_multiplier: float, seed: int, results_file: str, invalid_run: bool = False) -> Run:
-    # solução inicial
-    s = clarke_wright(p)
-
-    run = Run(s, p.n, tabu_tenure, bias_multiplier, invalid_multiplier, seed)
-    run.begin_savefile(results_file, p.name)
-
-    random.seed(seed)
-    
-    invalid_start = len(s) > k
-
+def run_tabu(p: Instance, max_time: int, run: Run, s: Solution) -> Run:
     t = 0
     it = 1
     pbar = tqdm(total=max_time)
@@ -67,10 +62,12 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: fl
                 i -= 1
 
         # reune os tipos de estruturas de vizinhança
-        structures = [shift_neighborhood, intraswap_neighborhood, swap_neighborhood, crossover_neighborhood]
+        if len(s) > p.k:
+            structures = [shift_neighborhood, swap_neighborhood, crossover_neighborhood]
+        else:
+            structures = [shift_neighborhood, intraswap_neighborhood, swap_neighborhood, crossover_neighborhood]
+            run.reset_values()
 
-        old_bias = run.bias_multiplier
-        
         s_ = None
         while s_ is None:
             # escolhe uma estrutura de vizinhança aleatoriamente
@@ -78,29 +75,17 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: fl
             # remove a estrutura para evitar de procurar nela novamente
             structures.remove(neighbor_method)
             # encontra nova solução que respeita o tabu ou o critério de aspiração
-            s_, movement = get_best_neighbor([neighbor_method], s, p, run)
-            # tenta encontrar por meio de shift
-            if s_ is None and neighbor_method is not shift_neighborhood and shift_neighborhood in structures:
-                run.bias_multiplier *= 100
-                s_, movement = get_best_neighbor([shift_neighborhood], s, p, run)
-                structures.remove(shift_neighborhood)
-        
-        run.bias_multiplier = old_bias
+            s_, movement = get_best_neighbor([neighbor_method], s, p, run, it)
         s = s_
-        
-        invalid_solution = len(s) > p.k
 
         # atualiza as frequências dos movimentos e a lista tabu
         for i in movement:
             run.common_movements[i[0]] += 1
             run.tabu_list[i[0]].append(i[1])
             run.tabu_tenures[i[0]].append(run.tabu_tenure_value)
-            
-        if invalid_start and not invalid_solution:
-            run.best_solution = s
 
         # atualiza melhor global
-        if run.best_solution.f > s.f:
+        if len(s) == p.k and run.best_solution.f > s.f and s.get_overcapacity(p.c) == 0:
             run.best_solution = s
 
         diff = time.time() - t_s
@@ -110,9 +95,7 @@ def run_tabu(p: Instance, max_time: int, tabu_tenure: float, bias_multiplier: fl
         pbar.update(diff if diff + pbar.n < max_time else max_time - pbar.n)
 
         run.update_savefile(s_, t)
-        if invalid_run and invalid_solution:
-            break
-        
+
         it += 1
 
     run.save()

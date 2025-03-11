@@ -1,6 +1,7 @@
 {
     "run_time": 300,
     "instances": [
+        "Vrp-Set-A/A/",
         "Vrp-Set-B/B/",
         "Vrp-Set-F/F/"
     ],

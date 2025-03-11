@@ -11,6 +11,9 @@ class Solution:
         self.d: list[int] = [get_route_demand(r, d) for r in s]
         self.f: int = f if f else objective_function(s, w)
 
+    def get_overcapacity(self, max_c: int):
+        return sum([max(0, i - max_c) for i in self.d])
+
     def __str__(self):
         return str(self.s)
 
@@ -38,9 +41,16 @@ class Run:
         self.common_movements: dict[int, int] = {i: 0 for i in range(n)}
         self.tabu_list = {i: [] for i in range(n)}
         self.tabu_tenures = {i: [] for i in range(n)}
-        self.tabu_tenure_value: int = round(tabu_tenure_multiplier * log10(n))
-        self.bias_multiplier: float = bias_multiplier
-        self.invalid_multiplier: float = invalid_multiplier
+
+        self.tabu_tenure_value: int = round(15 * log10(n))
+        self.tabu_tenure_value_: int = round(tabu_tenure_multiplier * log10(n))
+
+        self.bias_multiplier: float = 0.1
+        self.bias_multiplier_: float = bias_multiplier
+
+        self.invalid_multiplier: float = 0.8
+        self.invalid_multiplier_: float = invalid_multiplier
+
         self.best_solution: Solution = s
         self.savefile_suffix = f"t_{tabu_tenure_multiplier}_m_{bias_multiplier}_i_{invalid_multiplier}_s_{seed}.csv"
         self.savefile = pd.DataFrame({"local": [s.f], "global": [s.f], "time": [0.0], "solution": [s.s]})
@@ -54,6 +64,11 @@ class Run:
 
     def save(self):
         self.savefile.to_csv(self.save_path)
+
+    def reset_values(self):
+        self.tabu_tenure_value = self.tabu_tenure_value_
+        self.bias_multiplier = self.bias_multiplier_
+        self.invalid_multiplier = self.invalid_multiplier_
 
 
 def get_instance(path: str) -> Instance:
