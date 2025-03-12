@@ -6,7 +6,7 @@ from cvrp_tabu_search.problem import Instance, Solution, Run
 from cvrp_tabu_search.neighborhoods import shift_neighborhood, intraswap_neighborhood, swap_neighborhood, crossover_neighborhood
 
 
-def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run):
+def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run, accept_all: bool = False):
     # guarda o melhor das vizinhanças
     best_solution: Solution = None
     best_solution_movement = None
@@ -14,7 +14,7 @@ def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run):
 
     # roda todas as estruturas de vizinhança
     for f in structure_list:
-        for s_, movement in f(s, p):
+        for s_, movement in f(s, p, accept_all):
             s_: Solution = s_
 
             # calcula o bias para soluções com k maior que o permitido
@@ -49,6 +49,9 @@ def run_tabu(p: Instance, max_time: int, run: Run, s: Solution, invalid: bool = 
     it = 1
     pbar = tqdm(total=max_time)
 
+    over_k = len(s) > p.k
+    over_c = s.get_overcapacity(p.c) > 0
+
     while t < max_time:
         t_s = time.time()
 
@@ -63,7 +66,7 @@ def run_tabu(p: Instance, max_time: int, run: Run, s: Solution, invalid: bool = 
                 i -= 1
 
         # reune os tipos de estruturas de vizinhança
-        if len(s) > p.k:
+        if over_k:
             # remove intraswap porque não ajuda a remover a rota extra
             structures = [shift_neighborhood, swap_neighborhood, crossover_neighborhood]
         else:
@@ -78,7 +81,7 @@ def run_tabu(p: Instance, max_time: int, run: Run, s: Solution, invalid: bool = 
             # remove a estrutura para evitar de procurar nela novamente
             structures.remove(neighbor_method)
             # encontra nova solução que respeita o tabu ou o critério de aspiração
-            s_, movement = get_best_neighbor([neighbor_method], s, p, run)
+            s_, movement = get_best_neighbor([neighbor_method], s, p, run, over_c or over_k)
         s = s_
 
         # atualiza as frequências dos movimentos e a lista tabu

@@ -26,7 +26,7 @@ def update_objective_function_intraswap(w: np.ndarray, old_obj: np.int64, i: int
     return new_obj
 
 
-def intraswap_neighborhood(s: Solution, p: Instance):
+def intraswap_neighborhood(s: Solution, p: Instance, accept_all: bool = False):
     # para cada item da rota...
     for i in range(len(s.s)):
         if len(s.s[i]) == 0:
@@ -66,7 +66,7 @@ def update_objective_function_crossover(w: np.ndarray, old_obj: np.int64, i: int
     return new_obj
 
 
-def crossover_neighborhood(s: Solution, p: Instance):
+def crossover_neighborhood(s: Solution, p: Instance, accept_all: bool = False):
     # para cada combinação r0 x r1, em que r0 != r1
     for i in range(len(s.s)):
         if len(s.s[i]) == 0:
@@ -92,7 +92,7 @@ def crossover_neighborhood(s: Solution, p: Instance):
                     new_r1_demand = s.d[i] - r1_right_demand + r2_right_demand
                     new_r2_demand = s.d[j] + r1_right_demand - r2_right_demand
 
-                    if True or (new_r1_demand <= p.c and new_r2_demand <= p.c):
+                    if accept_all or (new_r1_demand <= p.c and new_r2_demand <= p.c):
                         # cria uma cópia da solução
                         new_s = deepcopy(s)
 
@@ -136,7 +136,7 @@ def update_objective_function_swap(w: np.ndarray, old_obj: np.int64, i: int, j: 
     return new_obj
 
 
-def swap_neighborhood(s: Solution, p: Instance):
+def swap_neighborhood(s: Solution, p: Instance, accept_all: bool = False):
     # para cada combinação r0 x r1, em que idx(r0) < idx(r1)
     for i in range(len(s.s)):
         if len(s.s[i]) == 0:
@@ -156,7 +156,7 @@ def swap_neighborhood(s: Solution, p: Instance):
                     new_i_demand = s.d[i] - v_demand + u_demand
                     new_j_demand = s.d[j] + v_demand - u_demand
 
-                    if True or (new_j_demand <= p.c and new_i_demand <= p.c):
+                    if accept_all or (new_j_demand <= p.c and new_i_demand <= p.c):
                         # cria uma cópia da solução
                         new_s = deepcopy(s)
 
@@ -193,7 +193,7 @@ def update_objective_function_shift(w: np.ndarray, old_obj: np.int64, i: int, j:
     return new_obj
 
 
-def shift_neighborhood(s: Solution, p: Instance):
+def shift_neighborhood(s: Solution, p: Instance, accept_all: bool = False):
     # para cada combinação r0 x r1, em que r0 != r1
     for i in range(len(s.s)):
         if len(s.s[i]) == 0:
@@ -216,7 +216,7 @@ def shift_neighborhood(s: Solution, p: Instance):
                 # se o item pode ser inserido na rota j sem estourar a capacidade...
                 new_j_demand = s.d[j] + v_demand
 
-                if True or new_j_demand <= p.c:
+                if accept_all or new_j_demand <= p.c:
                     # para cada lugar possível de inserir o ponto na rota
                     for k in range(len(s.s[j]) + 1):
                         # cria uma cópia da solução
