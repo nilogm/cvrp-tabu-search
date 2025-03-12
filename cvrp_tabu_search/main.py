@@ -47,7 +47,7 @@ def init(config_file: str, results_folder: str):
     results_folder_path = os.path.join(os.getcwd(), results_folder)
     os.makedirs(results_folder_path, exist_ok=True)
 
-    return d, all_configs
+    return d, all_configs, d["invalid_run"] if "invalid_run" in d else False
 
 
 def check_instance_path(instance_path: str):
@@ -67,7 +67,7 @@ def check_instance_path(instance_path: str):
     return path
 
 
-def run(instance_path: str, run_time: int, all_configs: list, results_folder: str):
+def run(instance_path: str, run_time: int, all_configs: list, results_folder: str, invalid: bool = False):
     """Executa o algoritmo para a instância dada.
 
     Args:
@@ -91,7 +91,7 @@ def run(instance_path: str, run_time: int, all_configs: list, results_folder: st
         run = Run(s, instance.n, valid_params, invalid_params, seed)
         run.begin_savefile(results_folder, instance.name)
 
-        run_tabu(instance, run_time, run, s)
+        run_tabu(instance, run_time, run, s, invalid)
 
 
 @app_experiment.command(help="Executes the experiments")
@@ -106,7 +106,7 @@ def exec(
         results_folder (Annotated[str, typer.Option, optional): pasta destino para os resultados. Defaults to "Directory in which to save the run's .csv")].
     """
     # carrega as configurações, cria as pastas
-    c, all_configs = init(config_file, results_folder)
+    c, all_configs, invalid = init(config_file, results_folder)
 
     for instance_path in c["instances"]:
         path = check_instance_path(instance_path)
@@ -119,7 +119,7 @@ def exec(
             for i in sorted(instances):
                 path_ = os.path.join(os.getcwd(), i)
                 try:
-                    run(path_, c["run_time"], all_configs, results_folder)
+                    run(path_, c["run_time"], all_configs, results_folder, invalid)
                 except Exception as e:
                     print(e)
                     print(traceback.format_exc(e))
@@ -127,7 +127,7 @@ def exec(
         # se for um arquivo, executa a instância
         else:
             try:
-                run(path, c["run_time"], all_configs, results_folder)
+                run(path, c["run_time"], all_configs, results_folder, invalid)
             except Exception as e:
                 print(e)
                 print(traceback.format_exc(e))
@@ -180,7 +180,7 @@ def read_folder(results_folder: Annotated[str, typer.Option(help="Directory cont
     folder_path = os.path.join(os.getcwd(), results_folder)
     files = sorted(os.listdir(folder_path))
 
-    cols = ["Instance", "Solution", "Best", "Time", "Iteration", "Tenure", "Bias", "Invalid", "Gap", "Seed"]
+    cols = ["Instance", "Solution", "Best", "Time", "Iteration", "Tenure", "Frequency", "Invalid", "Invalid Tenure", "Invalid Frequency", "Invalid Invalid", "Gap", "Seed"]
     all_df = pd.DataFrame()
 
     for i in files:
@@ -193,14 +193,22 @@ def read_folder(results_folder: Annotated[str, typer.Option(help="Directory cont
         sol_cost = objective_function(instance.solution["routes"], instance.w)
         sol_cost = instance.solution["cost"]
 
-        _, tenure, _, bias, _, invalid, _, seed = info.removesuffix(".csv").split("_")
+        _, tenure, _, frequency, _, invalid, _, i_tenure, _, i_frequency, _, i_invalid, _, seed = info.removesuffix(".csv").split("_")
 
         best = df.iloc[-1]["global"]
         min_iteration = df["local"].idxmin()
         min_time = df.iloc[min_iteration]["time"]
         gap = (best - sol_cost) / sol_cost
 
-        all_df = pd.concat([all_df, pd.DataFrame([[instance_name, sol_cost, best, min_time, min_iteration + 1, float(tenure), float(bias), float(invalid), gap, seed]], columns=cols)])
+        all_df = pd.concat(
+            [
+                all_df,
+                pd.DataFrame(
+                    [[instance_name, sol_cost, best, min_time, min_iteration + 1, float(tenure), float(frequency), float(invalid), float(i_tenure), float(i_frequency), float(i_invalid), gap, seed]],
+                    columns=cols,
+                ),
+            ]
+        )
 
     return all_df
 
@@ -215,20 +223,54 @@ def analyze(results_folder: Annotated[str, typer.Option(help="Directory containi
     all_df = read_folder(results_folder)
     all_df = all_df.drop(columns=["Seed"])
 
-    analysis = all_df.sort_values(["Tenure", "Bias"])
+    analysis = all_df.sort_values(["Tenure", "Frequency", "Invalid"])
     analysis["Tenure"] = analysis["Tenure"].map("{:.1f}".format)
-    analysis["Bias"] = analysis["Bias"].map("{:.3f}".format)
-    analysis = analysis.groupby(["Tenure", "Bias"], sort=False).agg({"Gap": ["min", "mean", "std"]})
+    analysis["Frequency"] = analysis["Frequency"].map("{:.3f}".format)
+    analysis["Invalid"] = analysis["Invalid"].map("{:.1f}".format)
+    analysis = analysis.groupby(["Tenure", "Frequency", "Invalid"], sort=False).agg({"Gap": ["min", "mean", "std"]})
     print(analysis.to_latex())
     print()
-    print(analysis)
+    print(analysis.sort_values(by=[("Gap", "mean"), ("Gap", "std")]))
     print()
 
-    all_df = all_df.drop(columns=["Solution", "Time", "Iteration", "Invalid", "Gap"])
-    all_df = all_df[["Instance", "Tenure", "Bias", "Best"]]
-    table = all_df.sort_values(["Instance", "Tenure", "Bias"])
+    all_df = all_df.drop(columns=["Solution", "Time", "Iteration", "Gap"])
+    all_df = all_df[["Instance", "Tenure", "Frequency", "Invalid", "Best"]]
+    table = all_df.sort_values(["Instance", "Tenure", "Frequency", "Invalid"])
     table["Tenure"] = table["Tenure"].map("{:.1f}".format)
-    table["Bias"] = table["Bias"].map("{:.3f}".format)
+    table["Frequency"] = table["Frequency"].map("{:.3f}".format)
+    table["Invalid"] = table["Invalid"].map("{:.1f}".format)
+    table["Best"] = table["Best"].astype(int)
+    print(table.to_latex(index=False))
+    print()
+    print(table)
+
+
+@app_experiment.command(help="Shows the invalid parameter tuning tables")
+def invalid(results_folder: Annotated[str, typer.Option(help="Directory containing results .csvs")], invalid: bool = False):
+    """Printa a tabela dos resultados dos experimentos com os parâmetros para análise.
+
+    Args:
+        results_folder (Annotated[str, typer.Option, optional): caminho para o diretório. Defaults to "Directory containing results .csvs")].
+    """
+    all_df = read_folder(results_folder)
+    all_df = all_df.drop(columns=["Seed"])
+
+    analysis = all_df.sort_values(["Invalid Tenure", "Invalid Frequency", "Invalid Invalid"])
+    analysis["Invalid Tenure"] = analysis["Invalid Tenure"].map("{:.1f}".format)
+    analysis["Invalid Frequency"] = analysis["Invalid Frequency"].map("{:.3f}".format)
+    analysis["Invalid Invalid"] = analysis["Invalid Invalid"].map("{:.1f}".format)
+    analysis = analysis.groupby(["Invalid Tenure", "Invalid Frequency", "Invalid Invalid"], sort=False).agg({"Iteration": ["min", "mean", "std"]})
+    print(analysis.to_latex())
+    print()
+    print(analysis.sort_values(by=[("Iteration", "mean"), ("Iteration", "std")]))
+    print()
+
+    all_df = all_df.drop(columns=["Solution", "Time", "Iteration", "Gap"])
+    all_df = all_df[["Instance", "Invalid Tenure", "Invalid Frequency", "Invalid Invalid", "Best"]]
+    table = all_df.sort_values(["Instance", "Invalid Tenure", "Invalid Frequency", "Invalid Invalid"])
+    table["Invalid Tenure"] = table["Invalid Tenure"].map("{:.1f}".format)
+    table["Invalid Frequency"] = table["Invalid Frequency"].map("{:.3f}".format)
+    table["Invalid Invalid"] = table["Invalid Invalid"].map("{:.1f}".format)
     table["Best"] = table["Best"].astype(int)
     print(table.to_latex(index=False))
     print()
@@ -243,7 +285,7 @@ def table(results_folder: Annotated[str, typer.Option(help="Directory containing
         results_folder (Annotated[str, typer.Option, optional): caminho para o diretório. Defaults to "Directory containing results .csvs")].
     """
     all_df = read_folder(results_folder)
-    all_df = all_df.drop(columns=["Tenure", "Bias"])
+    all_df = all_df.drop(columns=["Tenure", "Frequency"])
 
     table = all_df.sort_values(["Instance", "Best", "Time"]).groupby(["Instance", "Solution"], as_index=False).agg({"Best": ["first", "mean"], "Time": ["first", "mean"], "Gap": ["min", "mean"]})
     table["Solution"] = table["Solution"].astype(int)
@@ -254,6 +296,7 @@ def table(results_folder: Annotated[str, typer.Option(help="Directory containing
     print(table.to_latex(index=False))
 
     print(len(table[table["Gap", "min"] == 0]), len(table[table["Gap", "mean"] == 0]))
+    table.to_csv("table.csv")
 
     print()
     print(table)

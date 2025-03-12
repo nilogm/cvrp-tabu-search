@@ -44,7 +44,7 @@ def get_best_neighbor(structure_list: list, s: Solution, p: Instance, run: Run):
     return best_solution, best_solution_movement
 
 
-def run_tabu(p: Instance, max_time: int, run: Run, s: Solution) -> Run:
+def run_tabu(p: Instance, max_time: int, run: Run, s: Solution, invalid: bool = False) -> Run:
     t = 0
     it = 1
     pbar = tqdm(total=max_time)
@@ -104,6 +104,9 @@ def run_tabu(p: Instance, max_time: int, run: Run, s: Solution) -> Run:
         pbar.update(diff if diff + pbar.n < max_time else max_time - pbar.n)
 
         run.update_savefile(s_, t, over_k, over_c)
+
+        if invalid and not over_k:
+            break
 
         it += 1
 

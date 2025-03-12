@@ -1,0 +1,52 @@
+{
+    "run_time": 300,
+    "instances": [
+        "Vrp-Set-A/A/A-n34-k5",
+        "Vrp-Set-A/A/A-n45-k6",
+        "Vrp-Set-A/A/A-n53-k7",
+        "Vrp-Set-A/A/A-n61-k9",
+        "Vrp-Set-A/A/A-n63-k9",
+        "Vrp-Set-A/A/A-n64-k9",
+        "Vrp-Set-A/A/A-n65-k9",
+        "Vrp-Set-B/B/B-n41-k6",
+        "Vrp-Set-B/B/B-n45-k6",
+        "Vrp-Set-B/B/B-n51-k7",
+        "Vrp-Set-B/B/B-n57-k7",
+        "Vrp-Set-B/B/B-n64-k9",
+        "Vrp-Set-B/B/B-n66-k9",
+        "Vrp-Set-F/F/F-n45-k4",
+        "Vrp-Set-F/F/F-n72-k4"
+    ],
+    "valid": {
+        "tabu_tenure": [
+            3
+        ],
+        "frequency_multiplier": [
+            0.001
+        ],
+        "invalid_multiplier": [
+            0.1
+        ]
+    },
+    "invalid": {
+        "tabu_tenure": [
+            3,
+            7.5,
+            15
+        ],
+        "frequency_multiplier": [
+            0.001,
+            0.01,
+            0.1
+        ],
+        "invalid_multiplier": [
+            0.1,
+            0.5,
+            0.9
+        ]
+    },
+    "seeds": [
+        1
+    ],
+    "invalid_run": true
+}

@@ -1,5 +1,5 @@
 {
-    "run_time": 300,
+    "run_time": 1,
     "instances": [
         "Vrp-Set-A/A/",
         "Vrp-Set-B/B/",
@@ -12,8 +12,8 @@
         "frequency_multiplier": [
             0.001
         ],
-        "overcapacity_multiplier": [
-            0.5
+        "invalid_multiplier": [
+            0.1
         ]
     },
     "invalid": {
@@ -23,13 +23,10 @@
         "frequency_multiplier": [
             0.001
         ],
-        "overcapacity_multiplier": [
-            0.5
+        "invalid_multiplier": [
+            0.1
         ]
     },
-    "invalid_multiplier": [
-        0.5
-    ],
     "seeds": [
         2,
         3,
